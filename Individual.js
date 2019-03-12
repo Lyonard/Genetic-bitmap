@@ -2,9 +2,9 @@
  * Created by Roberto on 11/03/2019.
  */
 
-var Individual = function ( imgData ) {
-    this.imageWidth  = 64;
-    this.imageHeight = 64;
+var Individual = function ( width, height, imgData ) {
+    this.imageWidth  = width;
+    this.imageHeight = height;
 
     if ( typeof imgData === 'undefined' ) {
         imgData = [];
@@ -20,7 +20,7 @@ var Individual = function ( imgData ) {
 Individual.prototype.getFitness = function ( goalImgData ) {
     //evaluate fitness as the number of matching pixels
     //maximum value: 64 * 64
-    if ( goalImgData !== null ) {
+    if ( typeof goalImgData !== 'undefined' ) {
         var matching = 0;
         for ( var i = 0; i < this.imgData.length; i++ ) {
             if ( this.imgData[ i ] === goalImgData[ i ] ) {

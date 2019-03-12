@@ -3,19 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <title>Genetic bitmap</title>
+    <style>
+
+        canvas {
+            margin: 0 5px;
+            border: 1px solid #999;
+        }
+
+        input {
+            width: 50px;
+            padding: 0 5px;
+        }
+
+        .w_20 {
+            width: 20%;
+        }
+
+        .w_50 {
+            width: 50%;
+        }
+
+        .w_80 {
+            width: 80%;
+        }
+
+        .left {
+            float: left;
+        }
+
+        .clear {
+            clear: both;
+        }
+    </style>
 </head>
 <body>
-<canvas id="sample"
-        width="64" height="64"
-        style="height:100px;width:100px;">
-</canvas>
+<div class="w_20 left">
+    <canvas id="sample"
+            width="64" height="64"
+            style="height:100px;width:100px;">
+    </canvas>
+</div>
+<div class="w_80 left">
+    <div class="w_50 left">
+        <div class="w_50 left">
+            <label for="population">Population size</label>
+        </div>
+        <div class="w_50 left">
+            <input type="number" min="10" max="100" step="10" value="10" id="param_population"><br>
+        </div>
+        <div class="w_50 left">
+            <label for="population">Min # mutations</label>
+        </div>
+        <div class="w_50 left">
+            <input type="number" min="0" max="100" step="1" value="1" id="param_minMutations">
+        </div>
+        <div class="w_50 left">
+            <label for="population">Max # mutations</label>
+        </div>
+        <div class="w_50 left">
+            <input type="number" min="0" max="100" step="1" value="5" id="param_maxMutations">
+        </div>
+        <div class="w_50 left">
+            <label for="population">Max error allowed (%)</label>
+        </div>
+        <div class="w_50 left">
+            <input type="number" min="0" max="1" value="0.01" step="0.0001" id="param_maxError">
+        </div>
+        <div class="w_50 left">
+            <label for="population">Refresh every X generations</label>
+        </div>
+        <div class="w_50 left">
+            <input type="number" min="10" max="1000" step="10" value="100" id="param_step"><br>
+        </div>
+        <button id="start">Start</button>
+    </div>
+    <div class="w_50 left" id="stats">
+        Generation <span id="generation_number">0</span><br>
+        Best Fitness <span id="bestFitness">0</span>%
+    </div>
+</div>
+<div class="clear"></div>
+<br>
+<div id="population"></div>
 
 </body>
 <script type="text/javascript" src="Individual.js"></script>
 <script type="text/javascript" src="ai.js"></script>
+<script type="text/javascript" src="game_ui.js"></script>
 <script>
     var cleanTargetData;
-    var gg = new GeneticBitmap();
+    var game = new GameUI();
 
     document.addEventListener( "DOMContentLoaded", function ( event ) {
         var canvas  = document.getElementById( "sample" );
@@ -27,10 +104,10 @@
 
             //this array is a sequence of 64 * 64 * 4 elements. Each pixel is represented by 4 variables (r,g,b,a)
             //since our pixels are just black or white, let's take the first element every 4
-            var imgData  = context.getImageData( 0, 0, canvas.width, canvas.height ).data;
+            var imgData     = context.getImageData( 0, 0, canvas.width, canvas.height ).data;
             cleanTargetData = getCleanImgData( imgData );
 
-            document.dispatchEvent( new Event( "ai.start" ) );
+            //document.dispatchEvent( new Event( "ai.start" ) );
         };
         img.src    = "mario.bmp";
     } );
@@ -43,11 +120,15 @@
         return cleanImgData;
     }
 
-    document.addEventListener( "ai.start", function () {
-        gg.goalImgData = cleanTargetData;
-        gg.initPopulation();
-        gg.printPopulation();
-        gg.run();
+    document.getElementById( "start" ).addEventListener( "click", function () {
+        game.goalImgData     = cleanTargetData;
+        game.population      = Number( document.getElementById( 'param_population' ).value );
+        game.minMutations    = Number( document.getElementById( 'param_minMutations' ).value );
+        game.maxMutations    = Number( document.getElementById( 'param_maxMutations' ).value );
+        game.maxErrorAllowed = Number( document.getElementById( 'param_maxError' ).value );
+        game.step            = Number( document.getElementById( 'param_step' ).value );
+        game.init();
+        game.run();
     } );
 
 </script>

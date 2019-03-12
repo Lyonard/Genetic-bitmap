@@ -2,9 +2,11 @@ var GeneticBitmap = function ( goalImgData ) {
 
     this.goalImgData = goalImgData;
 
-    this.populationSize      = 10;
-    this.generation          = 0;
-    this.mutationProbability = 0.8;
+    this.populationSize  = 10;
+    this.generation      = 0;
+    this.minMutations    = 1;
+    this.maxMutations    = 5;
+    this.maxErrorAllowed = 0.001;
 
     this.population = [];
     this.fstBest    = null;
@@ -14,27 +16,8 @@ var GeneticBitmap = function ( goalImgData ) {
     this.imageHeight = 64;
 };
 
-GeneticBitmap.prototype.run = function () {
-    var self = this;
-
-    var interval = setInterval( function () {
-
-        for ( var i = 0; i < 100; i++ ) {
-            self.generation++;
-            self.runGeneration();
-        }
-        console.log( "generation " + self.generation );
-
-        self.printPopulation();
-
-        if ( self.goalReached() ) {
-            debugger;
-            clearInterval( interval );
-        }
-    }, 100 );
-};
-
 GeneticBitmap.prototype.runGeneration = function () {
+    this.generation++;
     this.selection();
     this.crossover();
     this.mutation();
@@ -43,7 +26,7 @@ GeneticBitmap.prototype.runGeneration = function () {
 
 GeneticBitmap.prototype.initPopulation = function () {
     for ( var i = 0; i < this.populationSize; i++ ) {
-        this.population.push( new Individual() );
+        this.population.push( new Individual( this.imageWidth, this.imageHeight ) );
     }
 };
 
@@ -57,27 +40,30 @@ GeneticBitmap.prototype.selection = function () {
         if ( aFitness >= bFitness ) {
             return -1;
         }
-        return 1;
+        return 1
     } );
 
-    this.fstBest = new Individual( rank[ 0 ].imgData.slice( 0 ) );
-    this.sndBest = new Individual( rank[ 1 ].imgData.slice( 0 ) );
+    this.fstBest = new Individual( this.imageWidth, this.imageHeight, rank[ 0 ].imgData.slice( 0 ) );
+    this.sndBest = new Individual( this.imageWidth, this.imageHeight, rank[ 1 ].imgData.slice( 0 ) );
 };
 
 GeneticBitmap.prototype.crossover = function () {
-    //choose a random limit point for cross-overing
-    var crossoverPoint1 = Math.round( Math.random() / 4 * this.fstBest.imgData.length );
-    var crossoverPoint2 = Math.round( Math.random() / 2 * this.sndBest.imgData.length / 2 );
-    var crossoverPoint3 = Math.round( Math.random() * this.sndBest.imgData.length );
+    var quarterLength = this.fstBest.imgData.length / 4;
 
-    for ( var i = 0; i < crossoverPoint1; i++ ) {
+    //choose a random limit point for cross-overing
+    var crossoverPoint1 = Math.round( Math.random() / 4 * quarterLength );
+    var crossoverPoint2 = Math.round( Math.random() / 4 * quarterLength + quarterLength );
+    var crossoverPoint3 = Math.round( Math.random() / 4 * quarterLength + 2 * quarterLength );
+    var crossoverPoint4 = Math.round( Math.random() / 4 * quarterLength + 3 * quarterLength );
+
+    for ( var i = crossoverPoint1; i < crossoverPoint2; i++ ) {
         var tmp                   = this.fstBest.imgData[ i ];
         this.fstBest.imgData[ i ] = this.sndBest.imgData[ i ];
         this.sndBest.imgData[ i ] = tmp;
     }
 
-    for ( var i = crossoverPoint2; i < crossoverPoint3; i++ ) {
-        var tmp                   = this.fstBest.imgData[ i ];
+    for ( i = crossoverPoint3; i < crossoverPoint4; i++ ) {
+        tmp                       = this.fstBest.imgData[ i ];
         this.fstBest.imgData[ i ] = this.sndBest.imgData[ i ];
         this.sndBest.imgData[ i ] = tmp;
     }
@@ -108,9 +94,9 @@ GeneticBitmap.prototype.replaceWorst = function () {
 
 GeneticBitmap.prototype.mutation = function () {
 
-    var mutationPointNumber = Math.round( Math.random() * 20 * this.mutationProbability );
+    var numberOfMutations = this.minMutations + Math.round( Math.random() * this.maxMutations );
 
-    for ( var i = 0; i < mutationPointNumber; i++ ) {
+    for ( var i = 0; i < numberOfMutations; i++ ) {
 
         var mutationPoint = Math.round( Math.random() * this.fstBest.imgData.length );
 
@@ -133,50 +119,77 @@ GeneticBitmap.prototype.mutation = function () {
 };
 
 GeneticBitmap.prototype.goalReached = function () {
+    var self            = this;
+    var maxTotalFitness = self.imageWidth * self.imageHeight; //exactly the number of pixels
 
-    var everyoneEqual     = true;
-    var numberOfDifferent = 0;
+    var enoughPrecision = function () {
+        var totalFitness = 0;
 
-    var i = 0;
-    while ( everyoneEqual && i < this.population.length - 1 ) {
-        for ( var j = 0; j < this.population[ i ].imgData.length; j++ ) {
-            if ( this.population[ i ].imgData[ j ] !== this.population[ i + 1 ].imgData[ j ] ) {
-                if ( numberOfDifferent > 0 ) {
-                    everyoneEqual = false;
-                }
-                else {
-                    //this introduces a 1-individual elasticity
-                    numberOfDifferent++;
-                }
+        for ( var i = 0; i < self.population.length; i++ ) {
+            totalFitness += self.population[ i ].getFitness( self.goalImgData );
+        }
+        var fitnessPercentage = (totalFitness / self.population.length) / maxTotalFitness;
+
+        return (1 - fitnessPercentage) < self.maxErrorAllowed;
+    };
+
+    var oneIsPerfect = function () {
+        var perfectExists = false;
+
+        for ( var i = 0; i < self.population.length; i++ ) {
+            if ( self.population[ i ].getFitness( self.goalImgData ) === maxTotalFitness ) {
+                perfectExists = true;
                 break;
             }
         }
-        i++;
-    }
 
-    return everyoneEqual;
-};
+        return perfectExists;
+    };
 
-GeneticBitmap.prototype.printPopulation = function () {
-    for ( var i = 0; i < this.population.length; i++ ) {
-        var canvas1 = document.getElementById( "i" + i );
-        if ( canvas1 === null ) {
-            var cc    = document.createElement( 'canvas' );
-            cc.id     = "i" + i;
-            cc.width  = this.imageWidth;
-            cc.height = this.imageHeight;
-            cc.style  = "height:100px;width:100px;";
-            document.body.appendChild( cc );
-            canvas1 = document.getElementById( "i" + i );
+    var populationConverged = function () {
+        var converged         = false;
+        var numberOfDifferent = 0;
+
+        var i = 0;
+        while ( !converged && i < this.population.length - 1 ) {
+            for ( var j = 0; j < this.population[ i ].imgData.length; j++ ) {
+                if ( this.population[ i ].imgData[ j ] !== this.population[ i + 1 ].imgData[ j ] ) {
+                    if ( numberOfDifferent > 0 ) {
+                        converged = true;
+                    }
+                    else {
+                        //this introduces a 1-individual elasticity
+                        numberOfDifferent++;
+                    }
+                    break;
+                }
+            }
+            i++;
         }
+        return converged;
+    };
 
-        var context1 = canvas1.getContext( '2d' );
+    //check if we have a prefect individual
+    //if not, check if we have reached an acceptable result.
+    //if not, check if every individual is the same. (if yes, there's no significant room for improvement)
 
-        var canvasData = this.population[ i ].getCanvasData( context1 );
-        context1.putImageData(
-            canvasData, 0, 0
-        );
-
-    }
-
+    return oneIsPerfect() || enoughPrecision() || populationConverged();
 };
+
+GeneticBitmap.prototype.getBestFitness = function () {
+    var self = this;
+    var rank = this.population.slice( 0 );
+
+    rank.sort( function ( a, b ) {
+        var aFitness = a.getFitness( self.goalImgData );
+        var bFitness = b.getFitness( self.goalImgData );
+        if ( aFitness >= bFitness ) {
+            return -1;
+        }
+        return 1
+    } );
+
+    var fitness_perc = rank[ 0 ].getFitness() / (this.imageWidth * this.imageHeight);
+    return Math.round( fitness_perc * 10000 ) / 100;
+};
+
