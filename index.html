@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Genetic bitmap</title>
+</head>
+<body>
+<canvas id="sample"
+        width="64" height="64"
+        style="height:100px;width:100px;">
+</canvas>
+
+</body>
+<script type="text/javascript" src="Individual.js"></script>
+<script type="text/javascript" src="ai.js"></script>
+<script>
+    var cleanTargetData;
+    var gg = new GeneticBitmap();
+
+    document.addEventListener( "DOMContentLoaded", function ( event ) {
+        var canvas  = document.getElementById( "sample" );
+        var context = canvas.getContext( "2d" );
+        var img     = new Image();
+
+        img.onload = function () {
+            context.drawImage( img, 0, 0 );
+
+            //this array is a sequence of 64 * 64 * 4 elements. Each pixel is represented by 4 variables (r,g,b,a)
+            //since our pixels are just black or white, let's take the first element every 4
+            var imgData  = context.getImageData( 0, 0, canvas.width, canvas.height ).data;
+            cleanTargetData = getCleanImgData( imgData );
+
+            document.dispatchEvent( new Event( "ai.start" ) );
+        };
+        img.src    = "mario.bmp";
+    } );
+
+    function getCleanImgData( imgData ) {
+        var cleanImgData = [];
+        for ( var i = 0; i < imgData.length; i += 4 ) {
+            cleanImgData.push( imgData[ i ] );
+        }
+        return cleanImgData;
+    }
+
+    document.addEventListener( "ai.start", function () {
+        gg.goalImgData = cleanTargetData;
+        gg.initPopulation();
+        gg.printPopulation();
+        gg.run();
+    } );
+
+</script>
+</html>
