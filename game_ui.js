@@ -14,6 +14,8 @@ GameUI = function () {
     this.maxErrorAllowed = 0.001;
 
     this.step = 100;
+
+    this.interval = null;
 };
 
 GameUI.prototype.setGoalImageData = function ( data ) {
@@ -66,7 +68,7 @@ GameUI.prototype.run = function () {
     var generation_span = document.getElementById( 'generation_number' );
     var fitness_span    = document.getElementById( 'bestFitness' );
 
-    var interval = setInterval( function () {
+    this.interval = setInterval( function () {
         for ( var i = 0; i < self.step; i++ ) {
             self.game.runGeneration();
         }
@@ -77,7 +79,7 @@ GameUI.prototype.run = function () {
         self.printPopulation();
 
         if ( self.game.goalReached() ) {
-            clearInterval( interval );
+            clearInterval( self.interval );
         }
     }, 100 );
 };

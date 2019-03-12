@@ -34,6 +34,10 @@
         .clear {
             clear: both;
         }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -76,6 +80,7 @@
             <input type="number" min="10" max="1000" step="10" value="100" id="param_step"><br>
         </div>
         <button id="start">Start</button>
+        <button id="stop" class="hidden">Stop</button>
     </div>
     <div class="w_50 left" id="stats">
         Generation <span id="generation_number">0</span><br>
@@ -120,16 +125,31 @@
         return cleanImgData;
     }
 
-    document.getElementById( "start" ).addEventListener( "click", function () {
-        game.goalImgData     = cleanTargetData;
-        game.population      = Number( document.getElementById( 'param_population' ).value );
-        game.minMutations    = Number( document.getElementById( 'param_minMutations' ).value );
-        game.maxMutations    = Number( document.getElementById( 'param_maxMutations' ).value );
-        game.maxErrorAllowed = Number( document.getElementById( 'param_maxError' ).value );
-        game.step            = Number( document.getElementById( 'param_step' ).value );
-        game.init();
-        game.run();
-    } );
+    document.getElementById( "start" )
+        .addEventListener( "click", function () {
+            game.goalImgData     = cleanTargetData;
+            game.population      = Number( document.getElementById( 'param_population' ).value );
+            game.minMutations    = Number( document.getElementById( 'param_minMutations' ).value );
+            game.maxMutations    = Number( document.getElementById( 'param_maxMutations' ).value );
+            game.maxErrorAllowed = Number( document.getElementById( 'param_maxError' ).value );
+            game.step            = Number( document.getElementById( 'param_step' ).value );
+            game.init();
+            game.run();
 
+            document.getElementById( "start" ).classList.add( "hidden" );
+            document.getElementById( "stop" ).classList.remove( "hidden" );
+        } );
+
+    document.getElementById( "stop" )
+        .addEventListener( "click", function () {
+
+            clearInterval( game.interval );
+            game = new GameUI();
+
+            document.getElementById( "population" ).innerHTML = "";
+
+            document.getElementById( "start" ).classList.remove( "hidden" );
+            document.getElementById( "stop" ).classList.add( "hidden" );
+        } );
 </script>
 </html>
